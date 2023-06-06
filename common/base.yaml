@@ -1,0 +1,13 @@
+logger:
+#  level: VERBOSE
+
+api:
+
+ota:
+  password: !secret ota_pass
+  on_begin:
+    then:
+      - logger.log: "OTA start"
+  on_end:
+    then:
+      - logger.log: "OTA end"

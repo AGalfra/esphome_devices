@@ -1,0 +1,209 @@
+substitutions:
+  devicename: dormitorio
+  upper_devicename: Dormitorio
+
+esphome:
+  name: $devicename
+  platform: ESP32
+  board: esp32doit-devkit-v1
+
+  includes:
+    - noblex_ac.h
+    
+  libraries:
+     - "SPI"
+     
+packages:
+  wifi: !include common/wifi.yaml
+  base: !include common/base.yaml
+  
+#############################################  
+# configuracion I2C
+i2c:
+  sda: GPIO21
+  scl: GPIO22
+  scan: False    
+#############################################
+# configuracion Tx y RX Infra rojo
+#remote_receiver:
+#  id: rx_ir
+#  pin: 
+#    number: GPIO14
+#    inverted: true
+#    mode: INPUT_PULLUP
+#  tolerance: 15%
+#  dump: all
+
+remote_transmitter:
+  pin: GPIO13         
+  carrier_duty_percent: 50%
+  id: tx_ir    
+#############################################
+# Configuracion Sensor Temperatura y Humedad
+sensor:
+  - platform: dht
+    pin: GPIO18
+    model: AM2302     # ver de probar con DHT22
+    temperature:
+      name: "Temperatura"
+      id: temp
+    humidity:
+      name: "Humedad"
+      id: hmd
+      accuracy_decimals: 1
+    update_interval: 60s    
+#############################################
+# Configuracion unidad de Aire acondicionado
+#climate:
+#  - platform: yashima   #climate_ir_lg
+#    name: "Noblex AC"
+#    sensor: temp
+#    transmitter_id: tx_ir
+#    lambda: |-
+#      auto noblex_climate = new NoblexClimate();
+#noblex_climate->set_sensor(id(temp));
+#      noblex_climate->set_transmitter(id(tx_ir));
+#      App.register_component(noblex_climate);
+#      return {noblex_climate};
+
+climate:
+  - platform: custom
+    lambda: |-
+      auto noblex_climate = new NoblexClimate();
+      noblex_climate->set_sensor(id(temp));
+      noblex_climate->set_transmitter(id(tx_ir));
+      App.register_component(noblex_climate);
+      return {noblex_climate};
+
+    climates:
+      - name: "Noblex AC"
+#############################################
+# Configuracion de pines Touch
+esp32_touch:
+  setup_mode: false    #poner setup_mode a false una vez encontrado el umbral
+#############
+# Pulsador de Encendido/Apagado
+binary_sensor:
+  - platform: esp32_touch     #Touch1 - Luz
+#    name: "Touch1"
+    pin: GPIO27
+    threshold: 900
+    id: pulsador_1
+    on_click:
+      min_length: 50ms
+      max_length: 350ms
+    #on_press:
+      then:
+        - light.toggle: luz_1
+        
+  - platform: esp32_touch     #Touch1 - LCD
+#    name: "Touch2"
+    pin: GPIO32
+    threshold: 900
+    id: pulsador_2
+    on_click:
+      min_length: 50ms
+      max_length: 350ms
+    #on_press:
+      then:
+        - switch.toggle: luz_lcd
+
+#############################################     
+# Salida asociada al pin del TRIAC o Rele
+output:
+  - platform: gpio
+    pin: GPIO4
+    id: triac_1
+    
+  - platform: gpio  
+    pin: GPIO15         # no conectada en impreso
+    id: rele
+    inverted: true
+#############################################    
+# Luz asociada al triac
+light:
+  - platform: binary
+    name: "Dormitorio"
+    id: luz_1
+    output: triac_1   
+    #restore_mode: ALWAYS_OFF
+#############################################
+switch:
+  - platform: output
+    name: "Switch LCD"
+    id: luz_lcd
+    output: rele
+    icon: mdi:alarm-panel
+    #inverted: true
+#############################################
+# puente con HomeAssistant
+time:
+  - platform: homeassistant
+    id: esptime 
+    timezone: America/Argentina/Cordoba #America/Buenos_Aires
+#############################################
+text_sensor:
+  - platform: homeassistant
+    entity_id: alarm_control_panel.alarma_casa
+    name: "Estado de Alarma"
+    id: alarm_state
+#############################################
+# Fuentes
+font:
+  - file: 'BebasNeue-Regular.ttf'
+    id: font1
+    size: 50
+  - file: 'BebasNeue-Regular.ttf'
+    id: font2
+    size: 20
+  - file: 'BebasNeue-Regular.ttf'
+    id: font3
+    size: 30
+#############################################    
+display:
+  - platform: ssd1306_i2c
+    model: "SSD1306 128x64"
+    address: 0x3C
+    brightness: 1.0
+    id: display1
+    pages:
+    #  - id: pagina1
+    #    lambda: |-
+    #      if (id(luz_lcd).state) {
+    #        it.fill(COLOR_OFF);
+    #      } else {
+    #        // Print time in HH:MM format
+    #        it.strftime(64, 57, id(font1), TextAlign::BASELINE_CENTER, "%H:%M", id(esptime).now());
+    #      }
+    #  - id: pagina2
+    #    lambda: |-
+    #      if (id(luz_lcd).state) {
+    #          it.fill(COLOR_OFF);
+    #        } else {
+    #        it.printf(0, 25, id(font2), TextAlign::BASELINE_LEFT, "Estado de Alarma: ");
+    #        it.printf(64, 60, id(font3), TextAlign::BASELINE_CENTER, "%s", id(alarm_state).state.c_str());
+    #        }
+      - id: pagina3
+        lambda: |-
+          if (id(luz_lcd).state) {
+              it.fill(COLOR_OFF);
+            } else {
+          if (id(temp).has_state()) {
+          it.printf(0, 20, id(font2), TextAlign::BASELINE_LEFT, "Temperatura: ");
+          it.printf(64, 64, id(font1), TextAlign::BASELINE_CENTER, "%.1f°C", id(temp).state);
+          }}
+      - id: pagina4
+        lambda: |-
+          if (id(luz_lcd).state) {
+              it.fill(COLOR_OFF);
+            } else {
+          if (id(hmd).has_state()) {
+            it.printf(0, 20, id(font2), TextAlign::BASELINE_LEFT, "Humedad: ");
+            it.printf(64, 64, id(font1), TextAlign::BASELINE_CENTER, "%.1f%%", id(hmd).state);
+          }}
+
+interval:
+  - interval: 5s
+    then:
+      - display.page.show_next: display1
+      - component.update: display1    

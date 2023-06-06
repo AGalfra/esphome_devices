@@ -1,0 +1,144 @@
+substitutions:
+  devicename: led-estar
+  upper_devicename: Led-Estar
+
+esphome:
+  name: $devicename
+  platform: ESP8266
+  board: d1_mini
+
+packages:
+  wifi: !include common/wifi.yaml
+  base: !include common/base.yaml
+
+#############################################  
+# Habilitacion para fuente de alimentacion
+power_supply:
+  - id: 'fuente_atx'
+    pin:
+      number: GPIO15   #D8
+      mode: OUTPUT
+#############################################  
+# Medicion de la fuente de alimentacion
+sensor:
+  - platform: adc
+    pin: A0
+    name: "Tension de Fuente"
+    icon: mdi:battery-70
+    filters:
+      - multiply: 6.2
+    update_interval: 60s 
+    accuracy_decimals: 2   
+
+# Configuracion Sensor Temperatura y Humedad
+  - platform: dht
+    pin: GPIO5        #D1
+    model: AM2302     # ver de probar con DHT22
+    temperature:
+      name: "Temperatura"
+      id: temp
+    humidity:
+      name: "Humedad"
+      id: hmd
+      accuracy_decimals: 1
+    update_interval: 60s        
+#############################################  
+# Pulsadores de Encendido/Apagado
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO4   #D2
+      mode: INPUT
+      inverted: True
+    id: pulsador_1
+    on_click:
+      min_length: 50ms
+      max_length: 350ms
+    #on_press:
+      then:
+        - light.toggle: led_3
+        
+  - platform: gpio
+    pin:
+      number: GPIO0    #D3
+      mode: INPUT
+      inverted: True
+    id: pulsador_2
+    on_click:
+      min_length: 50ms
+      max_length: 350ms
+    #on_press:
+      then:
+        - light.toggle: led_1
+
+  - platform: gpio
+    pin:
+      number: GPIO2   #D4
+      mode: INPUT
+      inverted: True
+    id: pulsador_3
+    on_click:
+      min_length: 50ms
+      max_length: 350ms
+    #on_press:
+      then:
+        - light.toggle: led_2
+
+# Configuracion de las salidas Neopixel
+light:
+  - platform: neopixelbus     #zocalos
+    type: GRB
+    variant: WS2812
+    power_supply: fuente_atx
+    pin: GPIO14   #D5
+    num_leds: 28
+    name: "Led 1"
+    id: led_1
+    effects:
+      - pulse:
+      - random:
+      - strobe:
+      - flicker:
+      - addressable_rainbow:
+      - addressable_color_wipe:
+      - addressable_scan:
+      - addressable_twinkle:
+      - addressable_fireworks:
+
+  - platform: neopixelbus     # mueble TV
+    type: GRB
+    variant: WS2812
+    power_supply: fuente_atx
+    pin: GPIO12   #D6
+    num_leds: 49
+    name: "Led 2"
+    id: led_2
+    effects:
+      - pulse:
+      - random:
+      - strobe:
+      - flicker:
+      - addressable_rainbow:
+      - addressable_color_wipe:
+      - addressable_scan:
+      - addressable_twinkle:
+      - addressable_fireworks:   
+
+  - platform: neopixelbus       # Alzada
+    type: GRB
+    variant: WS2812
+    power_supply: fuente_atx
+    pin: GPIO13   #D7
+    num_leds: 76
+    name: "Led 3"
+    id: led_3
+    effects:
+      - pulse:
+      - random:
+      - strobe:
+      - flicker:
+      - addressable_rainbow:
+      - addressable_color_wipe:
+      - addressable_scan:
+      - addressable_twinkle:
+      - addressable_fireworks:

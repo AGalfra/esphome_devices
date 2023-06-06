@@ -1,0 +1,79 @@
+substitutions:
+  devicename: alarma
+  upper_devicename: Alarma
+
+esphome:
+  name: $devicename
+  platform: ESP8266
+  board: d1_mini
+    
+packages:
+  wifi: !include common/wifi.yaml
+  base: !include common/base.yaml
+
+# Manual IP
+#  manual_ip:
+#    static_ip: 192.168.1.162
+#    gateway: 192.168.1.1
+#    subnet: 255.255.255.0
+
+# Configuracion del transmisor IR
+#remote_transmitter:
+#  pin: D6           #GPIO12
+#  carrier_duty_percent: 50%
+
+text_sensor:
+  - platform: homeassistant
+    entity_id: alarm_control_panel.alarma_casa
+    name: "Estado de Alarma"
+    id: alarm_state
+
+# Led de estado
+status_led:
+  pin:
+    number: D4      #GPIO2
+    inverted: True
+
+# Sensores
+sensor:
+  - platform: wifi_signal
+    name: "WiFi Signal Sensor"
+    update_interval: 60s
+
+#  - platform: adc
+#    pin: A0
+#    name: "Tension de Alarma"
+#    icon: mdi:battery-70
+#    filters:
+#      - multiply: 11.78
+#    update_interval: 60s
+
+binary_sensor:
+  - platform: gpio
+    pin: D1           #GPIO5
+    name: "PIR 1"
+    device_class: motion
+
+  - platform: gpio
+    pin: D2           #GPIO4
+    name: "PIR 2"
+    device_class: motion
+
+  - platform: gpio
+    pin: D5           #GPIO14
+    name: "Puerta"
+    device_class: door
+
+# Actuadores - Sirena y Buzzer
+switch:
+  - platform: gpio
+    name: "Buzzer Alarma"
+    icon: mdi:volume-high
+    pin: D7           #GPIO13
+    #restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    name: "Sirena Alarma"
+    icon: mdi:bell
+    pin: D8           #GPIO15
+    #restore_mode: ALWAYS_OFF

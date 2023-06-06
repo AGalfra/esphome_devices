@@ -1,0 +1,50 @@
+substitutions:
+  devicename: cenefa
+  upper_devicename: Cenefa
+
+esphome:
+  name: $devicename
+  platform: ESP8266
+  board: esp12e
+
+packages:
+  wifi: !include common/wifi.yaml
+  base: !include common/base.yaml
+
+
+# Pulsador en Encendido/Apagado
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO12
+      mode: INPUT_PULLUP
+      inverted: True
+    id: pulsador_1
+    on_click:
+      min_length: 50ms
+      max_length: 350ms
+    #on_press:
+      then:
+        - light.toggle: luz_1
+  
+#  - platform: gpio
+#    pin:
+#      number: GPIO13
+#      mode: INPUT_PULLUP
+#      inverted: True
+#    id: pulsador_2
+#    on_press:
+
+# Salida asociada al pin del TRIAC o Rele
+output:
+  - platform: gpio
+    pin: GPIO10
+    id: rele
+
+# 
+light:
+  - platform: binary
+    name: "Cenefa Cocina"
+    id: luz_1
+    output: rele  
+    #restore_mode: ALWAYS_OFF

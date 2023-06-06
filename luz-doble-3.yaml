@@ -1,0 +1,62 @@
+substitutions:
+  devicename: luz-doble-3
+  upper_devicename: Luz-Doble-3
+
+esphome:
+  name: $devicename
+  platform: ESP8266
+  board: esp01_1m
+
+packages:
+  wifi: !include common/wifi.yaml
+  base: !include common/base.yaml
+
+
+# Pulsadores de Encendido/Apagado
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO3   #RX
+      mode: INPUT
+      inverted: True
+    id: pulsador_1
+    on_click:
+      min_length: 50ms
+      max_length: 350ms
+      then:
+        - light.toggle: luz_1
+        
+  - platform: gpio
+    pin:
+      number: GPIO2
+      mode: INPUT
+      inverted: True
+    id: pulsador_2
+    on_click:
+      min_length: 50ms
+      max_length: 350ms
+    #on_press:
+      then:
+        - light.toggle: luz_2
+        
+# Salida asociada al pin del TRIAC o Rele
+output:
+  - platform: gpio
+    pin: GPIO0
+    id: triac_1
+
+  - platform: gpio
+    pin: GPIO1    #TX
+    id: triac_2
+
+# 
+light:
+  - platform: binary
+    name: "Luz Escalera"
+    id: luz_1
+    output: triac_1    
+
+  - platform: binary
+    name: "Luz Descanso"
+    id: luz_2
+    output: triac_2

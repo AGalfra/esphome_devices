@@ -1,0 +1,82 @@
+substitutions:
+  devicename: cochera
+  upper_devicename: Cochera
+
+esphome:
+  name: $devicename
+  platform: ESP8266
+  board: d1_mini
+
+packages:
+  wifi: !include common/wifi.yaml
+  base: !include common/base.yaml
+
+
+# Led de estado
+status_led:
+  pin:
+    number: D4      #GPIO2
+    inverted: True
+
+# Lectura del sensor de retardo creado como un asistente input_number
+sensor:
+  - platform: homeassistant
+    id: current_delay
+    name: "Retardo actual"
+    accuracy_decimals: 0
+    entity_id: input_number.delay_luz_cochera
+    
+# Pulsador en Encendido/Apagado
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO0       #D3
+      mode: INPUT_PULLUP
+      inverted: True
+    id: pulsador_1
+    on_press:
+      then:
+        - light.toggle: luz_1
+
+  - platform: gpio
+    pin: D1           #GPIO5
+    name: "PIR"
+    device_class: motion  
+    on_press:
+      then:
+        - if:
+            condition: 
+              lambda: 'return id(pir_on).state;'
+            then:
+              - light.turn_on: luz_1
+    on_release:
+      then:
+        - if:
+            condition:
+              lambda: 'return id(pir_on).state;'
+            then:
+              - delay: !lambda |-
+                  return id(current_delay).state *1000;
+              - light.turn_off: luz_1
+          
+# Switch de plantilla para activar el encendido de la luz a traves del sensor PIR 
+switch:
+  - platform: gpio
+    pin: D2
+    name: "Usar Sensor PIR"
+    id: pir_on
+    icon: mdi:lightbulb-night-outline
+
+# Salida asociada al pin del TRIAC o Rele
+output:
+  - platform: gpio
+    pin: D5       #GPIO14
+    id: rele
+
+# 
+light:
+  - platform: binary
+    name: "Cochera"
+    id: luz_1
+    output: rele  
+    restore_mode: ALWAYS_OFF

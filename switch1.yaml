@@ -1,0 +1,53 @@
+substitutions:
+  devicename: switch1
+  upper_devicename: Switch1
+
+esphome:
+  name: $devicename
+  platform: ESP8266
+  board: esp01_1m
+
+packages:
+  wifi: !include common/wifi.yaml
+  base: !include common/base.yaml
+
+# Pulsadores de Encendido/Apagado
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO3   #RX
+      mode: INPUT_PULLUP
+      inverted: True
+    id: pulsador_1
+    on_click:
+      min_length: 50ms
+      max_length: 350ms
+    #on_press:
+      then:
+        - switch.toggle: toma_1
+        
+#  - platform: gpio
+#    pin:
+#      number: GPIO2
+#      mode: INPUT_PULLUP
+#      inverted: True
+#    id: pulsador_2
+#    on_click:
+#      min_length: 50ms
+#      max_length: 350ms
+#    #on_press:
+#      then:
+#        - switch.toggle: toma_2
+        
+# Salida asociada al pin del TRIAC o Rele 
+switch:
+  - platform: gpio
+    name: "Ozonizador"
+    id: toma_1
+    pin: GPIO0    
+
+#  - platform: gpio
+#    name: "Toma xxx"
+#    id: toma_2
+#    pin: GPIO1    #TX
+    

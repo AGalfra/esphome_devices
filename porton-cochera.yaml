@@ -1,0 +1,93 @@
+substitutions:
+  devicename: porton-cochera
+  upper_devicename: Porton
+
+esphome:
+  name: $devicename
+  platform: ESP8266
+  board: d1_mini
+
+packages:
+  wifi: !include common/wifi.yaml
+  base: !include common/base.yaml
+
+#-------------------------------------------------------------------------------
+# Definicion de Endstop de apertura y cierre
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO5         #D1
+      mode: INPUT_PULLUP
+      inverted: True
+    id: open_endstop_binary_sensor
+    filters:
+      - delayed_on: 0.1s
+    
+  - platform: gpio
+    pin:
+      number: GPIO4         #D2
+      mode: INPUT_PULLUP
+      inverted: True
+    id: close_endstop_binary_sensor
+    filters:
+      - delayed_on: 0.1s
+
+# Definicion de sensores de arranque de motor para detectar
+# la pulsacion de un mando de control remoto
+  - platform: gpio
+    pin:
+      number: GPIO14        #D5
+      mode: INPUT_PULLUP
+    id: open_movement_binary_sensor
+
+  - platform: gpio
+    pin:
+      number: GPIO12        #D6
+      mode: INPUT_PULLUP
+    id: close_movement_binary_sensor    
+    
+#-------------------------------------------------------------------------------          
+# Switch con enclavamiento para evitar activacion simultanea
+# Implementado en entrada de boton de activacion de la placa 
+switch:
+  - platform: gpio
+    pin: GPIO13     #D7
+    interlock: &grupo_interlock [open_cover_switch, close_cover_switch]
+    id: open_cover_switch
+    on_turn_on:
+      - delay: 800ms
+      - switch.turn_off: open_cover_switch
+
+  - platform: gpio
+    pin: GPIO15     #D8
+    interlock: *grupo_interlock
+    id: close_cover_switch
+    on_turn_on:
+      - delay: 800ms
+      - switch.turn_off: close_cover_switch
+#-------------------------------------------------------------------------------          
+# Definicion de Cover
+cover:
+  - platform: feedback
+    name: "Porton Cochera"
+    device_class: gate
+    id: porton_cover
+    
+    open_action:
+      - switch.turn_on: open_cover_switch
+    open_duration: 11s
+    open_endstop: open_endstop_binary_sensor
+    open_sensor: open_movement_binary_sensor
+
+    close_action:
+      - switch.turn_on: close_cover_switch
+    close_duration: 11s
+    close_endstop: close_endstop_binary_sensor
+    close_sensor: close_movement_binary_sensor
+
+    stop_action:
+      - switch.turn_off: open_cover_switch
+      - switch.turn_off: close_cover_switch
+      
+    max_duration: 13s
+    #assumed_state: false

@@ -1,0 +1,18 @@
+button:
+  - platform: restart
+    name: ${device_name} restart
+
+binary_sensor:
+  - platform: status
+    name: "${device_name} Status"
+
+sensor:
+  - platform: uptime
+    name: ${device_name} uptime
+  - platform: wifi_signal
+    name: ${device_name} signal
+
+text_sensor:
+  - platform: wifi_info
+    bssid:
+      name: ${device_name} BSSID
